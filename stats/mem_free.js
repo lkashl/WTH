@@ -3,7 +3,7 @@ const { readFile } = require('../util/file');
 const contrib = require('blessed-contrib');
 const { randomColor, getColors } = require('../util/colors');
 const { intervals } = require('../config');
-const { forNumber } = require('../util/misc');
+const { forNumber, bytesToReadable } = require('../util/misc');
 
 /*
 DATA STRUCTURE: 
@@ -38,12 +38,26 @@ module.exports = new FileTask('/proc/meminfo',
             }
         })
 
-        this.data = (total - free) / total * 100;
+        this.data = {
+            percent: Math.round((total - free) / total * 10000)/100,
+            total: total * 1000,
+            free: free * 1000
+        }
 
     }, async function (grid, [y, x, yw, xw]) {
-        this.renders = [grid.set(y, x, yw, xw, contrib.gauge, {
-            label: "Mem Used",
+        this.renders = [grid.set(y, x, yw, xw, contrib.table, {
+            label: "Memory",
+            columnWidth: [9, 9, 9],
+            keys: true,
+            fg: "green",
+            selectedFg: "white",
+            selectedBg: "black"
         })]
     }, async function () {
-        this.renders[0].setPercent(this.data)
+        this.renders[0].setData({
+            headers: ["% Used", "Free", "Total"],
+            data: [
+                [this.data.percent, bytesToReadable(this.data.free), bytesToReadable(this.data.total)]
+            ]
+        })
     })

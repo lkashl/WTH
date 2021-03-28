@@ -13,8 +13,8 @@ class FileTask {
         this.data = null;
     }
 
-    async init() {
-        await this.initialise();
+    async init(limits) {
+        await this.initialise(limits);
     }
 
     async collect() {
