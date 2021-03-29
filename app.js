@@ -21,7 +21,7 @@ if (blessedEnabled) {
 const main = async () => {
     const modules = layout.enabledModules;
     const pMods = modules.map(module => require(`${modulePath}${module}`));
-    await Promise.all(pMods.map((mod,i) => mod.init(layout.limits[modules[i]]), "test"));
+    await Promise.all(pMods.map((mod, i) => mod.init(layout.limits[modules[i]]), "test"));
 
     const poll = async () => {
         const updates = pMods.map(async (mod, i) => {

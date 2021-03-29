@@ -15,8 +15,10 @@ DATA STRUCTURE:
 const identifier = /^(MemTotal|MemAvailable)/;
 const sanitiser = /kB/g;
 
-module.exports = new FileTask('/proc/meminfo',
-    function () { },
+module.exports = new FileTask(
+    function () {
+        this.filePath = '/proc/meminfo';
+     },
     async function () {
         let contents = await readFile(this.filePath, 'utf8');
         contents = contents.split("\n");
@@ -50,8 +52,8 @@ module.exports = new FileTask('/proc/meminfo',
             columnWidth: [9, 9, 9],
             keys: true,
             fg: "green",
-            selectedFg: "white",
-            selectedBg: "black"
+            selectedFg: "foreground",
+            selectedBg: "background"
         })]
     }, async function () {
         this.renders[0].setData({

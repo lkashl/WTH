@@ -1,3 +1,6 @@
+/*
+    Defines layout for presentation in render, this is fed into the render function
+*/
 const columns = 12, rows = 18;
 const col2Start = 3;
 const origin = 0;

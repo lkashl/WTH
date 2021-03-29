@@ -13,9 +13,10 @@ DATA STRUCTURE:
 */
 
 const splitter = /\W+/;
-module.exports = new FileTask('/proc/net/dev',
+module.exports = new FileTask(
     async function () {
-        const file = await readFile('/proc/net/dev');
+        this.filePath = '/proc/net/dev'
+        const file = await readFile(this.filePath);
         const adapters = [];
         file.toString().split("\n").splice(2,).forEach(adapter => {
             const entries = adapter.split(splitter);
@@ -59,8 +60,8 @@ module.exports = new FileTask('/proc/net/dev',
                 columnWidth: [9, 9, 9],
                 keys: true,
                 fg: "green",
-                selectedFg: "white",
-                selectedBg: "black"
+                selectedFg: "foreground",
+                selectedBg: "background"
             }))
         }
         this.renders = renders;

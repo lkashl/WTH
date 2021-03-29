@@ -18,8 +18,9 @@ BASELINE STRUCTURE:
 */
 const identifier = /^cpu\d/;
 module.exports = new FileTask(
-    '/proc/stat',
-    function () { },
+    function () {
+        this.filePath = '/proc/stat';
+    },
     async function () {
         let contents = await readFile(this.filePath, 'utf8');
         contents = contents.split("\n");

@@ -1,8 +1,8 @@
-const { open } = require("../util/file");
-
+/*
+    Construct for all file handler based operations from read to render
+*/
 class FileTask {
-    constructor(filePath, initialise, collectData, prepareRender, renderData) {
-        this.filePath = filePath;
+    constructor(initialise, collectData, prepareRender, renderData) {
         this.initialise = initialise;
         this.collectData = collectData;
         this.renderData = renderData;
@@ -13,6 +13,8 @@ class FileTask {
         this.data = null;
     }
 
+    // Limits to render are passed in and stored on init
+    // This can be device constraints in terms of numbers displayed for a specific layout
     async init(limits) {
         await this.initialise(limits);
     }

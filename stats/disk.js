@@ -51,9 +51,7 @@ const statToArray = (stat) => {
     return nums;
 }
 
-const identifier = /^cpu\d/;
 module.exports = new FileTask(
-    '/sys/block',
     async function (limits) {
         const path = '/sys/block/';
         const blockDevices = await readdir(path);
@@ -130,8 +128,8 @@ module.exports = new FileTask(
                 columnWidth: [9, 9, 9],
                 keys: true,
                 fg: "green",
-                selectedFg: "white",
-                selectedBg: "black"
+                selectedFg: "foreground",
+                selectedBg: "background"
             }))
         }
         this.renders = renders;
