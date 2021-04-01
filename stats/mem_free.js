@@ -1,8 +1,6 @@
-const FileTask = require('../classes/fileTask');
+const GenericTask = require('../classes/GenericTask');
 const { readFile } = require('../util/file');
 const contrib = require('blessed-contrib');
-const { randomColor, getColors } = require('../util/colors');
-const { intervals } = require('../config');
 const { forNumber, bytesToReadable } = require('../util/misc');
 
 /*
@@ -15,7 +13,7 @@ DATA STRUCTURE:
 const identifier = /^(MemTotal|MemAvailable)/;
 const sanitiser = /kB/g;
 
-module.exports = new FileTask(
+module.exports = new GenericTask(
     function () {
         this.filePath = '/proc/meminfo';
      },
@@ -23,7 +21,7 @@ module.exports = new FileTask(
         let contents = await readFile(this.filePath, 'utf8');
         contents = contents.split("\n");
 
-        if (!this.data) this.data = [];
+        if (!this._data) this._data = [];
 
         let total, free;
         forNumber(contents.length, (i, breaker) => {
@@ -40,14 +38,14 @@ module.exports = new FileTask(
             }
         })
 
-        this.data = {
+        this._data = {
             percent: Math.round((total - free) / total * 10000)/100,
             total: total * 1000,
             free: free * 1000
         }
 
     }, async function (grid, [y, x, yw, xw]) {
-        this.renders = [grid.set(y, x, yw, xw, contrib.table, {
+        this._renders = [grid.set(y, x, yw, xw, contrib.table, {
             label: "Memory",
             columnWidth: [9, 9, 9],
             keys: true,
@@ -56,10 +54,10 @@ module.exports = new FileTask(
             selectedBg: "background"
         })]
     }, async function () {
-        this.renders[0].setData({
+        this._renders[0].setData({
             headers: ["% Used", "Free", "Total"],
             data: [
-                [this.data.percent, bytesToReadable(this.data.free), bytesToReadable(this.data.total)]
+                [this._data.percent, bytesToReadable(this._data.free), bytesToReadable(this._data.total)]
             ]
         })
     })

@@ -1,7 +1,6 @@
-const FileTask = require('../classes/fileTask');
+const GenericTask = require('../classes/GenericTask');
 const { readFile, readdir, fstat } = require('../util/file');
 const contrib = require('blessed-contrib');
-const { getColors } = require('../util/colors');
 const { bytesToReadable, forNumber } = require('../util/misc');
 
 /*
@@ -51,7 +50,7 @@ const statToArray = (stat) => {
     return nums;
 }
 
-module.exports = new FileTask(
+module.exports = new GenericTask(
     async function (limits) {
         const path = '/sys/block/';
         const blockDevices = await readdir(path);
@@ -61,7 +60,7 @@ module.exports = new FileTask(
         this.devices = [];
         this.sectors = [];
         this.baseLine = [];
-        this.data = [];
+        this._data = [];
 
         const devices = [];
         stats.forEach((stat, i) => {
@@ -77,7 +76,8 @@ module.exports = new FileTask(
         })
 
         devices.sort((a, b) => b.activity - a.activity);
-        forNumber(limits.maxDevices, (i) => this.devices.push(devices[i].name), 0)
+        const limit = Math.min(limits.maxDevices, devices.length);
+        forNumber(limit, (i) => this.devices.push(devices[i].name), 0)
 
         this.scanPaths = scanPaths;
 
@@ -109,7 +109,7 @@ module.exports = new FileTask(
                     readB -= this.baseLine[index].readB;
                     writeB -= this.baseLine[index].writeB;
 
-                    this.data[index] = {
+                    this._data[index] = {
                         percentQueue: activeIoms + queueIoms === 0 ? 0 : queueIoms / (activeIoms + queueIoms) * 100,
                         readB: readB,
                         writeB: writeB
@@ -123,7 +123,7 @@ module.exports = new FileTask(
     async function (grid, [y, x, yw, xw,]) {
         const renders = [];
         for (let i = 0; i < this.devices.length; i++) {
-            renders.push(grid.set(y + i * 2, x, yw, xw, contrib.table, {
+            renders.push(grid.set(y + i * 2, x, 2, xw, contrib.table, {
                 label: this.devices[i],
                 columnWidth: [9, 9, 9],
                 keys: true,
@@ -132,14 +132,14 @@ module.exports = new FileTask(
                 selectedBg: "background"
             }))
         }
-        this.renders = renders;
+        this._renders = renders;
     },
     async function () {
-        if (this.data.length > 0)
-            this.renders.forEach((render, i) => render.setData({
+        if (this._data.length > 0)
+            this._renders.forEach((render, i) => render.setData({
                 headers: ["% Wait", "Read", "Write"],
                 data: [
-                    [this.data[i].percentQueue, bytesToReadable(this.data[i].readB), bytesToReadable(this.data[i].writeB)]
+                    [this._data[i].percentQueue, bytesToReadable(this._data[i].readB), bytesToReadable(this._data[i].writeB)]
                 ]
             }));
     })

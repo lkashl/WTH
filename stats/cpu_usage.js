@@ -1,4 +1,4 @@
-const FileTask = require('../classes/fileTask');
+const GenericTask = require('../classes/GenericTask');
 const { readFile } = require('../util/file');
 const contrib = require('blessed-contrib');
 const { getColors } = require('../util/colors');
@@ -17,7 +17,7 @@ BASELINE STRUCTURE:
 ]
 */
 const identifier = /^cpu\d/;
-module.exports = new FileTask(
+module.exports = new GenericTask(
     function () {
         this.filePath = '/proc/stat';
     },
@@ -26,8 +26,8 @@ module.exports = new FileTask(
         contents = contents.split("\n");
 
         let firstInit = false;
-        if (!this.data) {
-            this.data = [];
+        if (!this._data) {
+            this._data = [];
             this.headings = [];
             this.range = [null, null];
             this.baseLine = [];
@@ -39,7 +39,7 @@ module.exports = new FileTask(
 
         // If the file hasn't been updated then just return the same info
         if (contents.length === 1) {
-            this.data.forEach(core => {
+            this._data.forEach(core => {
                 //let rand = Math.random() * 100;
                 const entry = core[core.length - 1]// + rand;
                 core.push(entry);
@@ -57,7 +57,7 @@ module.exports = new FileTask(
                     Number.parseInt(iowait) + Number.parseInt(irq) + Number.parseInt(softirq);
 
                 if (firstInit) {
-                    this.data[core] = [];
+                    this._data[core] = [];
                     this.headings.push(core);
                     this.baseLine[core] = [consumed, idle];
                     return core++;
@@ -69,8 +69,8 @@ module.exports = new FileTask(
                 this.baseLine[core] = [consumed, idle];
 
                 const val = intervalConsumed / intervalIdle * 100;
-                if (this.data[core].length === intervals) this.data[core].splice(0, 1);
-                this.data[core].push(val);
+                if (this._data[core].length === intervals) this._data[core].splice(0, 1);
+                this._data[core].push(val);
                 if (this.range[0] === null || val < this.range[0]) this.range[0] = val;
                 if (this.range[1] === null || val > this.range[1]) this.range[1] = val;
                 core++;
@@ -87,7 +87,7 @@ module.exports = new FileTask(
             if (this.range >= 1) this.range[0]--
         }
 
-        this.renders = [grid.set(y, x, yw, xw, contrib.line, {
+        this._renders = [grid.set(y, x, yw, xw, contrib.line, {
             style: {
                 text: "green",
                 baseline: "black"
@@ -101,7 +101,7 @@ module.exports = new FileTask(
 
     },
     async function () {
-        const series = this.data.map((core, i) => {
+        const series = this._data.map((core, i) => {
             return {
                 title: `Core ${i}`,
                 x: this.axis,
@@ -111,5 +111,5 @@ module.exports = new FileTask(
                 }
             }
         })
-        this.renders[0].setData(series)
+        this._renders[0].setData(series)
     })

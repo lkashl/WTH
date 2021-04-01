@@ -1,9 +1,7 @@
-const FileTask = require('../classes/fileTask');
+const GenericTask = require('../classes/GenericTask');
 const { readFile } = require('../util/file');
 const contrib = require('blessed-contrib');
-const { randomColor, getColors } = require('../util/colors');
-const { intervals } = require('../config');
-const { bytesToReadable } = require('../util/misc');
+const { bytesToReadable, forNumber } = require('../util/misc');
 
 /*
 DATA STRUCTURE: 
@@ -13,8 +11,8 @@ DATA STRUCTURE:
 */
 
 const splitter = /\W+/;
-module.exports = new FileTask(
-    async function () {
+module.exports = new GenericTask(
+    async function (limits) {
         this.filePath = '/proc/net/dev'
         const file = await readFile(this.filePath);
         const adapters = [];
@@ -25,12 +23,23 @@ module.exports = new FileTask(
 
             const total = stats.reduce((a, b) => a + Number.parseInt(b), 0);
             if (total === 0) return;
-            adapters.push(adapterName);
+            adapters.push({
+                adapterName,
+                activity: total
+            });
         });
-        this.adapters = adapters;
-        this.identifiers = new RegExp("^\\W+(" + adapters.join("|") + ")");
+
+        // Check whether there is a UI limit to adapters rendered
+        const adaptersFlat = [];
+        const limit = Math.min(limits.maxDevices, adapters.length);
+        if (adapters.length > limit) adapters.sort((a, b) => b.activity - a.activity);
+        forNumber(limit, (i) => adaptersFlat.push(adapters[i].adapterName))
+
+        this.adapters = adaptersFlat;
+        this.identifiers = new RegExp("^\\W+(" + adaptersFlat.join("|") + ")");
         this.baseLine = {};
-        this.data = [];
+        
+        this._data = [];
     },
     async function () {
         const file = await readFile(this.filePath);
@@ -48,14 +57,14 @@ module.exports = new FileTask(
             const outgoingNet = outgoing - this.baseLine[name].outgoing
 
             const j = this.adapters.indexOf(name);
-            this.data[j] = { incomingNet, outgoingNet }
+            this._data[j] = { incomingNet, outgoingNet }
             this.baseLine[name] = { incoming, outgoing };
         })
     },
     async function (grid, [y, x, yw, xw,]) {
         const renders = [];
         for (let i = 0; i < this.adapters.length; i++) {
-            renders.push(grid.set(y + i * 2, x, yw, xw, contrib.table, {
+            renders.push(grid.set(y + i * 2, x, 2, xw, contrib.table, {
                 label: this.adapters[i],
                 columnWidth: [9, 9, 9],
                 keys: true,
@@ -64,14 +73,14 @@ module.exports = new FileTask(
                 selectedBg: "background"
             }))
         }
-        this.renders = renders;
+        this._renders = renders;
     },
     async function () {
-        if (this.data.length > 0)
-            this.renders.forEach((render, i) => render.setData({
+        if (this._data.length > 0)
+            this._renders.forEach((render, i) => render.setData({
                 headers: ["Incoming", "Outgoing"],
                 data: [
-                    [bytesToReadable(this.data[i].incomingNet), bytesToReadable(this.data[i].outgoingNet)]
+                    [bytesToReadable(this._data[i].incomingNet), bytesToReadable(this._data[i].outgoingNet)]
                 ]
             }));
     })
