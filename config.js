@@ -1,5 +1,4 @@
 module.exports = {
-    intervals: 20,
-    blessedEnabled: true,
+    intervals: 30,
     interval: 1000
-}//
+}

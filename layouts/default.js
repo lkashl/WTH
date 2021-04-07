@@ -25,8 +25,11 @@ const diskHeight = Math.ceil(sharedSpaceMemDisk / 2);
 const memHeight = Math.floor(sharedSpaceMemDisk / 2);
 
 module.exports = {
+    // Whether internal tracking stats are enabled
     internalStats,
+    // Specifies which modules are enabled for this dashboard
     enabledModules,
+    // Limits to the amount of rendered devices based on this dashboard
     limits: {
         disk: {
             maxDevices: 3
@@ -35,13 +38,14 @@ module.exports = {
             maxDevices: 3
         }
     },
+    // The master grid layout
     master: [rows, columns],
 
     // Y, X, YW, XW
     "internalStats": {
-        gen: [row0Start, col0Start, row1Start - row0Start, columns/3],
-        perf: [row0Start, columns/3*1, row1Start - row0Start, columns/3],
-        err: [row0Start, columns/3*2, row1Start - row0Start, columns/3]
+        gen: [row0Start, col0Start, row1Start - row0Start, columns / 3],
+        perf: [row0Start, columns / 3 * 1, row1Start - row0Start, columns / 3],
+        err: [row0Start, columns / 3 * 2, row1Start - row0Start, columns / 3]
     },
 
     "mem_free": [row1Start, col1Start, staticBlock, col2Start - col1Start],

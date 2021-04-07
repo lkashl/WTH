@@ -32,6 +32,7 @@ module.exports = new GenericTask(
             this.range = [null, null];
             this.baseLine = [];
             this.axis = [];
+            this.range = [0, 1]
             firstInit = true;
         }
 
@@ -71,8 +72,11 @@ module.exports = new GenericTask(
                 const val = intervalConsumed / intervalIdle * 100;
                 if (this._data[core].length === intervals) this._data[core].splice(0, 1);
                 this._data[core].push(val);
-                if (this.range[0] === null || val < this.range[0]) this.range[0] = val;
-                if (this.range[1] === null || val > this.range[1]) this.range[1] = val;
+                
+                if (val > this.range[1]) {
+                    this.range[1] = val;
+                    this._forceRerender = true;
+                }
                 core++;
             }
         })
@@ -93,10 +97,9 @@ module.exports = new GenericTask(
                 baseline: "black"
             },
             label: "CPU Usage",
-            minY: this.range[0] || 0,
-            maxY: this.range[1] || 0,
+            minY: this.range[0],
+            maxY: this.range[1],
             wholeNumbersOnly: true
-            //showLegend: true
         })]
 
     },

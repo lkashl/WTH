@@ -32,7 +32,8 @@ module.exports = new GenericTask(
         // Check whether there is a UI limit to adapters rendered
         const adaptersFlat = [];
         const limit = Math.min(limits.maxDevices, adapters.length);
-        if (adapters.length > limit) adapters.sort((a, b) => b.activity - a.activity);
+        
+        adapters.sort((a, b) => b.activity - a.activity);
         forNumber(limit, (i) => adaptersFlat.push(adapters[i].adapterName))
 
         this.adapters = adaptersFlat;

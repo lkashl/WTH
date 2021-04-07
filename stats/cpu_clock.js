@@ -13,6 +13,7 @@ DATA STRUCTURE:
 */
 
 const identifier = /^cpu MHz/;
+
 module.exports = new GenericTask(
     function () {
         this.filePath = '/proc/cpuinfo'
@@ -42,8 +43,17 @@ module.exports = new GenericTask(
                 let val = line.split(":")[1];
                 val = Number.parseInt(val.trim())
                 this._data[core].push(val);
-                if (this.range[0] === null || val < this.range[0]) this.range[0] = val;
-                if (this.range[1] === null || val > this.range[1]) this.range[1] = val;
+
+                // Determine the new bounds for this value rounded to 5% precision
+                if (this.range[0] === null || val < this.range[0]) {
+                    this._forceRerender = true;
+                    this.range[0] = val;
+                }
+
+                if (this.range[1] === null || val > this.range[1]) {
+                    this._forceRerender = true;
+                    this.range[1] = val;
+                }
                 core++;
             }
         })

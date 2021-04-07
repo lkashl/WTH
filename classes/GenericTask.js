@@ -1,6 +1,7 @@
 /*
     Construct for all file handler based operations from read to render
 */
+
 class GenericTask {
     constructor(initialise, collectData, renderInitiate, renderData) {
         this.initialise = initialise;
@@ -11,6 +12,7 @@ class GenericTask {
         this._renders = null;
         this._data = null;
         this._name = null;
+        this._forceRerender = false;
         this._performance = [];
     }
 

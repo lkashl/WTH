@@ -1,4 +1,4 @@
-const { interval, blessedEnabled, modules } = require('./config');
+const { interval, modules } = require('./config');
 
 const modulePath = './stats/';
 const blessed = require('blessed');
@@ -8,22 +8,23 @@ const layout = require('./layouts/default');
 const { forNumber } = require('./util/misc');
 
 let screen, grid, logGen, logPerf, logErr;
-if (blessedEnabled) {
-    screen = blessed.screen();
+screen = blessed.screen();
 
-    grid = new contrib.grid({ rows: layout.master[0], cols: layout.master[1], screen: screen })
+grid = new contrib.grid({
+    rows: layout.master[0], cols: layout.master[1], screen: screen,
+})
 
-    if (layout.internalStats) {
-        logGen = grid.set(...layout.internalStats.gen, contrib.log, { fg: "green", selectedFg: "green", label: "General Log" })
-        logPerf = grid.set(...layout.internalStats.perf, contrib.log, { fg: "gray", selectedFg: "green", label: "Performance Log" })
-        logErrActual = grid.set(...layout.internalStats.err, contrib.log, { fg: "red", selectedFg: "green", label: "Error Log" })
+if (layout.internalStats) {
+    logGen = grid.set(...layout.internalStats.gen, contrib.log, { fg: "green", selectedFg: "green", label: "General Log" })
+    logPerf = grid.set(...layout.internalStats.perf, contrib.log, { fg: "gray", selectedFg: "green", label: "Performance Log" })
+    logErrActual = grid.set(...layout.internalStats.err, contrib.log, { fg: "red", selectedFg: "green", label: "Error Log" })
 
-        logErr = {};
-        logErr.log = (err) => {
-            if (!err.stack) return logErrActual.log(err);
-            const stack = err.stack.split("\n");
-            forNumber(2, (i) => logErrActual.log(stack[i]), 0);
-        }
+    logErr = {};
+    logErr.log = (err) => {
+        if (!err.stack) return logErrActual.log(err);
+        console.log(err.stack);
+        const stack = err.stack.split("\n");
+        forNumber(2, (i) => logErrActual.log(stack[i]), 0);
     }
 
     screen.key(['escape', 'q', 'C-c'], function (ch, key) {
@@ -41,20 +42,28 @@ const main = async () => {
     const functioningModules = [];
     const disabledModules = [];
 
+    let flags = {
+        pollIniialised: false,
+        promisesReturned: false
+    }
+
     const poll = async () => {
         const updates = functioningModules.map(async (mod, i) => {
             try {
                 await mod.collect();
 
-                if (blessedEnabled) {
-                    await mod.prepareRender(grid, layout[mod._name]);
-                        mod._renders.forEach(render => {
-                            screen.append(render);
-                        })
-
-                    await mod.render();
-                    //if (logPerf) logPerf.log(`${mod._name} ${mod._performance.join(", ")}`)
+                if (!flags.pollIniialised || mod._forceRerender) {
+                    mod._forceRerender = false;
+                    mod.prepareRender(grid, layout[mod._name])
+                    mod._renders.forEach(render => {
+                        screen.remove(render);
+                        screen.append(render);
+                    })
                 }
+
+                await mod.render();
+                //if (logPerf) logPerf.log(`${mod._name} ${mod._performance.join(", ")}`)
+
             } catch (err) {
                 // If any of the components from render to collect fail then flag this module as unstable
                 if (logErr) logErr.log(err)
@@ -63,7 +72,8 @@ const main = async () => {
         });
 
         await Promise.all(updates);
-        if (blessedEnabled) screen.render()
+        if (!flags.pollIniialised) flags.pollIniialised = true;
+        screen.render()
 
         setTimeout(() => poll(), interval);
     }
@@ -84,11 +94,13 @@ const main = async () => {
             disabledModules.push({ mod, err })
         })
         .then(() => {
-            if (functioningModules.length + disabledModules.length === pMods.length) poll();
+            if (functioningModules.length + disabledModules.length === pMods.length && !flags.promisesReturned) {
+                flags.promisesReturned = true;
+                poll();
+            }
         }));
 
 
 }
 
 main();
-
