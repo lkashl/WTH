@@ -135,12 +135,21 @@ module.exports = new GenericTask({
         this._renders = renders;
     },
     async render() {
-        if (this._data.length > 0)
+        if (this._data.length > 0) {
             this._renders.forEach((render, i) => render.setData({
                 headers: ["% Wait", "Read", "Write"],
                 data: [
                     [this._data[i].percentQueue, bytesToReadable(this._data[i].readB), bytesToReadable(this._data[i].writeB)]
                 ]
             }));
+        }
+
+    },
+    async returnDebugState(stage) {
+        return {
+            devices: this.devices,
+            sectors: this.sectors,
+            baseline: this.baseline,
+        }
     }
 })

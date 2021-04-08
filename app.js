@@ -6,6 +6,7 @@ const contrib = require('blessed-contrib');
 
 const layout = require('./layouts/default');
 const { forNumber } = require('./util/misc');
+const { appendFile } = require('./util/file');
 
 let screen, grid, logGen, logPerf, logErr;
 screen = blessed.screen();
@@ -20,11 +21,13 @@ if (layout.internalStats) {
     logErrActual = grid.set(...layout.internalStats.err, contrib.log, { fg: "red", selectedFg: "green", label: "Error Log" })
 
     logErr = {};
-    logErr.log = (err) => {
-        if (!err.stack) return logErrActual.log(err);
-        console.log(err.stack);
+    logErr.log = async (message, err, state) => {
+        logErrActual.log(message);
+        if (!err && !state) return;
         const stack = err.stack.split("\n");
         forNumber(2, (i) => logErrActual.log(stack[i]), 0);
+        state = await state;
+        appendFile(`./logs/${state._name}.txt`, JSON.stringify(state) + "\n");
     }
 
     screen.key(['escape', 'q', 'C-c'], function (ch, key) {
@@ -43,16 +46,17 @@ const main = async () => {
     const disabledModules = [];
 
     let flags = {
-        pollIniialised: false,
-        promisesReturned: false
+        pollInitialised: false,
+        promisesReturned: false,
     }
 
     const poll = async () => {
+        const trimFailing = [];
         const updates = functioningModules.map(async (mod, i) => {
             try {
                 await mod.phase("collect");
 
-                if (!flags.pollIniialised || mod._forceRerender) {
+                if (!flags.pollInitialised || mod._forceRerender) {
                     mod._forceRerender = false;
                     mod.phase("prepareRender", grid, layout[mod._name]);
                     mod._renders.forEach(render => {
@@ -66,13 +70,19 @@ const main = async () => {
 
             } catch (err) {
                 // If any of the components from render to collect fail then flag this module as unstable
-                if (logErr) logErr.log(err)
+                if (logErr) logErr.log("Failed poll", err, mod.returnDebugState())
+                mod._failures++;
+                if (mod._failures > 3) trimFailing.push({ i, err, mod });
             }
-
         });
 
+        
         await Promise.all(updates);
-        if (!flags.pollIniialised) flags.pollIniialised = true;
+        trimFailing.forEach(mod => {
+            disabledModules.push({ mod: functioningModules.splice(mod.i, 1), err: mod.err });
+            logErr.log(`${mod.mod._name} module disabled due to failures`)
+        });
+        if (!flags.pollInitialised) flags.pollInitialised = true;
         screen.render()
 
         setTimeout(() => poll(), interval);
@@ -86,11 +96,7 @@ const main = async () => {
         })
         .catch((err) => {
             // Write out error to log render
-            if (logErr) {
-                logErr.log("Failed init: " + mod._name)
-                logErr.log(err)
-            }
-
+            if (logErr) logErr.log("Failed init: " + mod._name, err, mod.returnDebugState())
             disabledModules.push({ mod, err })
         })
         .then(() => {

@@ -87,5 +87,13 @@ module.exports = new GenericTask({
             }
         })
         this._renders[0].setData(series)
+    },
+    async returnDebugState(stage) {
+        const source = (await readFile(this.filePath)).toString();
+        return {
+            headings: this.headings,
+            range: this.range,
+            source
+        }
     }
 })

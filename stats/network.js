@@ -15,6 +15,7 @@ module.exports = new GenericTask({
     async init(limits) {
         this.filePath = '/proc/net/dev'
         const file = await readFile(this.filePath);
+
         const adapters = [];
         file.toString().split("\n").splice(2,).forEach(adapter => {
             const entries = adapter.split(splitter);
@@ -77,12 +78,21 @@ module.exports = new GenericTask({
         this._renders = renders;
     },
     async render() {
-        if (this._data.length > 0)
+        if (this._data.length > 0) {
             this._renders.forEach((render, i) => render.setData({
                 headers: ["Incoming", "Outgoing"],
                 data: [
                     [bytesToReadable(this._data[i].incomingNet), bytesToReadable(this._data[i].outgoingNet)]
                 ]
             }));
+        }
+    },
+    async returnDebugState(stage) {
+        const source = (await readFile(this.filePath)).toString();
+        return {
+            adapters: this.adapters,
+            baseLine: this.baseLine,
+            source: source
+        }
     }
 })

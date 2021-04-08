@@ -62,5 +62,11 @@ module.exports = new GenericTask({
                 [this._data.percent, bytesToReadable(this._data.free), bytesToReadable(this._data.total)]
             ]
         })
+    },
+    async returnDebugState(stage) {
+        const source = (await readFile(this.filePath)).toString();
+        return {
+            source
+        }
     }
 })
