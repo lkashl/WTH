@@ -50,8 +50,8 @@ const statToArray = (stat) => {
     return nums;
 }
 
-module.exports = new GenericTask(
-    async function (limits) {
+module.exports = new GenericTask({
+    async init(limits) {
         const path = '/sys/block/';
         const blockDevices = await readdir(path);
         const stats = await Promise.all(blockDevices.map(dev => readFile(`${path}${dev}/stat`)));
@@ -85,7 +85,7 @@ module.exports = new GenericTask(
         const sectors = await Promise.all(this.devices.map(dev => readFile(`${path}${dev}/queue/max_sectors_kb`)));
         this.sectors = sectors.map(sector => Number.parseInt(sector.toString()));
     },
-    async function () {
+    async collect() {
         let queue = [];
         this.scanPaths.forEach(path => queue.push(readFile(path), fstat(path)));
         queue = await Promise.all(queue);
@@ -120,7 +120,7 @@ module.exports = new GenericTask(
             }
         });
     },
-    async function (grid, [y, x, yw, xw,]) {
+    async prepareRender(grid, [y, x, yw, xw]) {
         const renders = [];
         for (let i = 0; i < this.devices.length; i++) {
             renders.push(grid.set(y + i * 2, x, 2, xw, contrib.table, {
@@ -134,7 +134,7 @@ module.exports = new GenericTask(
         }
         this._renders = renders;
     },
-    async function () {
+    async render() {
         if (this._data.length > 0)
             this._renders.forEach((render, i) => render.setData({
                 headers: ["% Wait", "Read", "Write"],
@@ -142,4 +142,5 @@ module.exports = new GenericTask(
                     [this._data[i].percentQueue, bytesToReadable(this._data[i].readB), bytesToReadable(this._data[i].writeB)]
                 ]
             }));
-    })
+    }
+})

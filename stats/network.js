@@ -11,8 +11,8 @@ DATA STRUCTURE:
 */
 
 const splitter = /\W+/;
-module.exports = new GenericTask(
-    async function (limits) {
+module.exports = new GenericTask({
+    async init(limits) {
         this.filePath = '/proc/net/dev'
         const file = await readFile(this.filePath);
         const adapters = [];
@@ -32,17 +32,17 @@ module.exports = new GenericTask(
         // Check whether there is a UI limit to adapters rendered
         const adaptersFlat = [];
         const limit = Math.min(limits.maxDevices, adapters.length);
-        
+
         adapters.sort((a, b) => b.activity - a.activity);
         forNumber(limit, (i) => adaptersFlat.push(adapters[i].adapterName))
 
         this.adapters = adaptersFlat;
         this.identifiers = new RegExp("^\\W+(" + adaptersFlat.join("|") + ")");
         this.baseLine = {};
-        
+
         this._data = [];
     },
-    async function () {
+    async collect() {
         const file = await readFile(this.filePath);
         const lines = file.toString().split("\n");
         lines.forEach((line, i) => {
@@ -62,7 +62,7 @@ module.exports = new GenericTask(
             this.baseLine[name] = { incoming, outgoing };
         })
     },
-    async function (grid, [y, x, yw, xw,]) {
+    async prepareRender(grid, [y, x, yw, xw]) {
         const renders = [];
         for (let i = 0; i < this.adapters.length; i++) {
             renders.push(grid.set(y + i * 2, x, 2, xw, contrib.table, {
@@ -76,7 +76,7 @@ module.exports = new GenericTask(
         }
         this._renders = renders;
     },
-    async function () {
+    async render() {
         if (this._data.length > 0)
             this._renders.forEach((render, i) => render.setData({
                 headers: ["Incoming", "Outgoing"],
@@ -84,4 +84,5 @@ module.exports = new GenericTask(
                     [bytesToReadable(this._data[i].incomingNet), bytesToReadable(this._data[i].outgoingNet)]
                 ]
             }));
-    })
+    }
+})

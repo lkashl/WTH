@@ -14,11 +14,11 @@ DATA STRUCTURE:
 
 const identifier = /^cpu MHz/;
 
-module.exports = new GenericTask(
-    function () {
+module.exports = new GenericTask({
+    init() {
         this.filePath = '/proc/cpuinfo'
     },
-    async function () {
+    async collect() {
         let contents = await readFile(this.filePath, 'utf8');
         contents = contents.split("\n");
 
@@ -57,7 +57,8 @@ module.exports = new GenericTask(
                 core++;
             }
         })
-    }, async function (grid, [y, x, yw, xw]) {
+    },
+    async prepareRender(grid, [y, x, yw, xw]) {
         if (this.range[0] === this.range[1]) {
             this.range[1]++
             if (this.range >= 1) this.range[0]--
@@ -72,7 +73,8 @@ module.exports = new GenericTask(
             maxY: this.range[1] || 0,
             wholeNumbersOnly: true
         })]
-    }, async function () {
+    },
+    async render() {
         // Reoptimise by persisting data format instead?
         const series = this._data.map((core, i) => {
             return {
@@ -85,4 +87,5 @@ module.exports = new GenericTask(
             }
         })
         this._renders[0].setData(series)
-    })
+    }
+})

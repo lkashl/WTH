@@ -50,18 +50,18 @@ const main = async () => {
     const poll = async () => {
         const updates = functioningModules.map(async (mod, i) => {
             try {
-                await mod.collect();
+                await mod.phase("collect");
 
                 if (!flags.pollIniialised || mod._forceRerender) {
                     mod._forceRerender = false;
-                    mod.prepareRender(grid, layout[mod._name])
+                    mod.phase("prepareRender", grid, layout[mod._name]);
                     mod._renders.forEach(render => {
                         screen.remove(render);
                         screen.append(render);
                     })
                 }
 
-                await mod.render();
+                await mod.phase("render");
                 //if (logPerf) logPerf.log(`${mod._name} ${mod._performance.join(", ")}`)
 
             } catch (err) {
@@ -79,7 +79,7 @@ const main = async () => {
     }
 
     // Don't use promise all so failing modules can more neatly be intercepted
-    pMods.map((mod, i) => mod.init(layout.limits[modules[i]])
+    pMods.map((mod, i) => mod.phase("init", layout.limits[modules[i]])
         .then(() => {
             if (logGen) logGen.log("Init " + mod._name)
             functioningModules.push(mod);
@@ -99,8 +99,6 @@ const main = async () => {
                 poll();
             }
         }));
-
-
 }
 
 main();

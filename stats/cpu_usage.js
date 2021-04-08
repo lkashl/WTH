@@ -17,11 +17,11 @@ BASELINE STRUCTURE:
 ]
 */
 const identifier = /^cpu\d/;
-module.exports = new GenericTask(
-    function () {
+module.exports = new GenericTask({
+    init() {
         this.filePath = '/proc/stat';
     },
-    async function () {
+    async collect() {
         let contents = await readFile(this.filePath, 'utf8');
         contents = contents.split("\n");
 
@@ -72,7 +72,7 @@ module.exports = new GenericTask(
                 const val = intervalConsumed / intervalIdle * 100;
                 if (this._data[core].length === intervals) this._data[core].splice(0, 1);
                 this._data[core].push(val);
-                
+
                 if (val > this.range[1]) {
                     this.range[1] = val;
                     this._forceRerender = true;
@@ -84,7 +84,7 @@ module.exports = new GenericTask(
         if (firstInit) this.axis = Object.keys(this.headings).map(num => Number.parseInt(num));
 
     },
-    async function (grid, [y, x, yw, xw,]) {
+    async prepareRender(grid, [y, x, yw, xw]) {
 
         if (this.range[0] === this.range[1]) {
             this.range[1]++
@@ -103,7 +103,7 @@ module.exports = new GenericTask(
         })]
 
     },
-    async function () {
+    async render() {
         const series = this._data.map((core, i) => {
             return {
                 title: `Core ${i}`,
@@ -115,4 +115,5 @@ module.exports = new GenericTask(
             }
         })
         this._renders[0].setData(series)
-    })
+    }
+})

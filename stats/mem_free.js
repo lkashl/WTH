@@ -13,11 +13,11 @@ DATA STRUCTURE:
 const identifier = /^(MemTotal|MemAvailable)/;
 const sanitiser = /kB/g;
 
-module.exports = new GenericTask(
-    function () {
+module.exports = new GenericTask({
+    init() {
         this.filePath = '/proc/meminfo';
-     },
-    async function () {
+    },
+    async collect() {
         let contents = await readFile(this.filePath, 'utf8');
         contents = contents.split("\n");
 
@@ -39,12 +39,13 @@ module.exports = new GenericTask(
         })
 
         this._data = {
-            percent: Math.round((total - free) / total * 10000)/100,
+            percent: Math.round((total - free) / total * 10000) / 100,
             total: total * 1000,
             free: free * 1000
         }
 
-    }, async function (grid, [y, x, yw, xw]) {
+    },
+    async prepareRender(grid, [y, x, yw, xw]) {
         this._renders = [grid.set(y, x, yw, xw, contrib.table, {
             label: "Memory",
             columnWidth: [9, 9, 9],
@@ -53,11 +54,13 @@ module.exports = new GenericTask(
             selectedFg: "foreground",
             selectedBg: "background"
         })]
-    }, async function () {
+    },
+    async render() {
         this._renders[0].setData({
             headers: ["% Used", "Free", "Total"],
             data: [
                 [this._data.percent, bytesToReadable(this._data.free), bytesToReadable(this._data.total)]
             ]
         })
-    })
+    }
+})

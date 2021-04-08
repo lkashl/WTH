@@ -1,8 +1,11 @@
-# App title
+# WTH: Whats Technically Happening
 
-## THIS UTILITY IS EXTREMELY EARLY ON IN DEVLOPMENT AND SHOULD ONLY BE USED FOR PLAY UNTIL A PROPER RELEASE IS ISSUED
+### A NodeJS resource monitoring utility in the terminal
 
-## DO NOT USE IN A PRODUCTION ENVIRONMENT, SERIOUSLY!!
+## Important note
+#### THIS UTILITY IS EXTREMELY EARLY ON IN DEVLOPMENT AND SHOULD ONLY BE USED FOR PLAY UNTIL A PROPER RELEASE IS ISSUED
+
+#### DO NOT USE IN A PRODUCTION ENVIRONMENT, SERIOUSLY!!
 
 ## Description
 
@@ -50,11 +53,13 @@ Stat files provide the underlying statistics for devices. All stat files should 
 
 File for user customisation. There are limited behaviors supported at the moment since many of them have been migrated to UI concerns. At the moment:
 
-- Intervals: The amount of interval data to store. This will likely be migrated to the layouts folder since the UI will designate usable area for components
+- Intervals: The amount of interval data to store. This will likely be migrated to the layouts folder since the UI will designate usable area for components. The scroll of the graph is also defined by the UI component based on the grid layout by the looks of things
 - Interval: The frequency with which to poll. This will likely be driven within the terminal application so that users can toggle on the fly rather than being bound by a static interval
 
 ### TODO:
+
 - Add NVIDIA DGPU support
 - Add Intel IGPU support
 - Add error logging for system
 - Add dynamically scaling graph (at the moment scales one way)
+- Remove unnecessary async awaits 

@@ -3,11 +3,12 @@
 */
 
 class GenericTask {
-    constructor(initialise, collectData, renderInitiate, renderData) {
-        this.initialise = initialise;
-        this.collectData = collectData;
-        this.renderInitiate = renderInitiate;
-        this.renderData = renderData;
+    constructor({ init, collect, prepareRender, render }) {
+
+        this.init = init;
+        this.collect = collect;
+        this.prepareRender = prepareRender;
+        this.render = render;
 
         this._renders = null;
         this._data = null;
@@ -16,29 +17,10 @@ class GenericTask {
         this._performance = [];
     }
 
-    // Limits to render are passed in and stored on init
-    // This can be device constraints in terms of numbers displayed for a specific layout
-    async init(limits) {
-        await this.initialise(limits);
+    async phase(phase, ...params) {
+        await this[phase](...params)
     }
 
-    async collect() {
-        const before = new Date();
-        await this.collectData();
-        this._performance = [new Date() - before];
-    }
-
-    async prepareRender(...args) {
-        const before = new Date();
-        await this.renderInitiate(...args);
-        this._performance.push(new Date() - before);
-    }
-
-    async render() {
-        const before = new Date();
-        await this.renderData();
-        this._performance.push(new Date() - before);
-    }
 }
 
 module.exports = GenericTask;
