@@ -2,6 +2,8 @@
 
 ### A NodeJS resource monitoring utility in the terminal
 
+![Screenshot2](https://user-images.githubusercontent.com/13351116/114092433-3c416a80-98fd-11eb-8a97-e4b32b883d6b.PNG)
+
 ## Important note
 #### THIS UTILITY IS EXTREMELY EARLY ON IN DEVLOPMENT AND SHOULD ONLY BE USED FOR PLAY UNTIL A PROPER RELEASE IS ISSUED
 
