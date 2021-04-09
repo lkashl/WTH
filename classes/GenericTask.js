@@ -2,6 +2,10 @@
     Construct for all file handler based operations from read to render
 */
 
+const { readFile } = require("../util/file");
+
+const osDetails = "/proc/version";
+
 class GenericTask {
     constructor({ init, collect, prepareRender, render, returnDebugState }) {
 
@@ -11,14 +15,22 @@ class GenericTask {
         this.render = render;
         this.debug = returnDebugState;
 
-        this.returnDebugState = async function () {
-            const debugInfo = await this.debug();
-            return {
-                ...debugInfo,
+        this.returnDebugState = async function (err) {
+            const os = await readFile(osDetails).catch(err => err)
+            const debugInfo = await this.debug().catch(err => err)
+            
+            const obj = {
+                err: {message: err.message, stack: err.stack},
                 _name: this._name,
                 _data: this._data,
-                _renders: this._renders.map(obj=>obj.uid)
+                _renders: this._renders.map(obj => obj.uid),
+                debugInfoError: debugInfo instanceof Error,
+                nodeVersions: process.versions,
+                os: os instanceof Error ? { message: os.message, stack: os.stack } : os.toString()
             }
+
+            if (!obj.debugInfoError) return { ...obj, ...debugInfo }
+            return obj;
         }
 
         this._renders = null;

@@ -2,6 +2,7 @@ const GenericTask = require('../classes/GenericTask');
 const { readFile } = require('../util/file');
 const contrib = require('blessed-contrib');
 const { bytesToReadable, forNumber } = require('../util/misc');
+const { isDebug } = require('../util/env');
 
 /*
 DATA STRUCTURE: 
@@ -11,14 +12,21 @@ DATA STRUCTURE:
 */
 
 const splitter = /\W+/;
+
 module.exports = new GenericTask({
     async init(limits) {
-        this.filePath = '/proc/net/dev'
+
+        this.filePath = isDebug ? "./logs/network.replica" : '/proc/net/dev'
+
         const file = await readFile(this.filePath);
 
         const adapters = [];
-        file.toString().split("\n").splice(2,).forEach(adapter => {
-            const entries = adapter.split(splitter);
+        file.toString().split("\n").splice(2,).forEach(line => {
+            // Resolves i1 by ensuring padding is always present for consistent indexing
+            // The file is whitespaced to a common index so the longest adapter isn't always spaced out
+            line = " " + line;
+
+            const entries = line.split(splitter);
             const adapterName = entries[1];
             const stats = entries.splice(2,);
 
@@ -45,8 +53,14 @@ module.exports = new GenericTask({
     },
     async collect() {
         const file = await readFile(this.filePath);
-        const lines = file.toString().split("\n");
-        lines.forEach((line, i) => {
+
+        file.toString().split("\n").forEach((line) => {
+            if (!line) return;
+
+            // Resolves i1 by ensuring padding is always present for consistent indexing
+            // The file is whitespaced to a common index so the longest adapter isn't always spaced out
+            line = " " + line;
+
             const adapter = this.identifiers.exec(line);
 
             if (!adapter) return;

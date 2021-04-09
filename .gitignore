@@ -2,3 +2,4 @@ node_modules
 .vscode
 *.0x
 logs/*.txt
+logs/*.replica

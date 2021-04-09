@@ -8,6 +8,8 @@ const layout = require('./layouts/default');
 const { forNumber } = require('./util/misc');
 const { appendFile } = require('./util/file');
 
+const failLimit = 2;
+
 let screen, grid, logGen, logPerf, logErr;
 screen = blessed.screen();
 
@@ -70,13 +72,13 @@ const main = async () => {
 
             } catch (err) {
                 // If any of the components from render to collect fail then flag this module as unstable
-                if (logErr) logErr.log("Failed poll", err, mod.returnDebugState())
+                if (logErr) logErr.log("Failed poll", err, mod.returnDebugState(err))
                 mod._failures++;
-                if (mod._failures > 3) trimFailing.push({ i, err, mod });
+                if (mod._failures === failLimit) trimFailing.push({ i, err, mod });
             }
         });
 
-        
+
         await Promise.all(updates);
         trimFailing.forEach(mod => {
             disabledModules.push({ mod: functioningModules.splice(mod.i, 1), err: mod.err });
@@ -96,7 +98,7 @@ const main = async () => {
         })
         .catch((err) => {
             // Write out error to log render
-            if (logErr) logErr.log("Failed init: " + mod._name, err, mod.returnDebugState())
+            if (logErr) logErr.log("Failed init: " + mod._name, err, mod.returnDebugState(err))
             disabledModules.push({ mod, err })
         })
         .then(() => {
