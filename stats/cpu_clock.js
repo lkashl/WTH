@@ -3,7 +3,7 @@ const { readFile } = require('../util/file');
 const contrib = require('blessed-contrib');
 const { getColors } = require('../util/colors');
 const { intervals } = require('../config');
-
+const { paddedXAxis } = require('../util/render');
 /*
 DATA STRUCTURE: 
 [
@@ -25,7 +25,6 @@ module.exports = new GenericTask({
         let firstInit = false;
         if (!this._data) {
             this._data = [];
-            this.headings = [];
             this.range = [null, null];
             firstInit = true;
         }
@@ -34,10 +33,7 @@ module.exports = new GenericTask({
 
         contents.forEach(line => {
             if (identifier.test(line)) {
-                if (firstInit) {
-                    this._data[core] = [];
-                    this.headings.push(core);
-                }
+                if (firstInit) this._data[core] = [];
 
                 if (this._data[core].length === intervals) this._data[core].splice(0, 1);
                 let val = line.split(":")[1];
@@ -71,7 +67,9 @@ module.exports = new GenericTask({
             label: "CPU Clocks",
             minY: this.range[0] || 0,
             maxY: this.range[1] || 0,
-            wholeNumbersOnly: true
+            wholeNumbersOnly: true,
+            xPadding: 0,
+            xLabelPadding: 0
         })]
     },
     async render() {
@@ -79,7 +77,7 @@ module.exports = new GenericTask({
         const series = this._data.map((core, i) => {
             return {
                 title: `Core ${i}`,
-                x: this.headings,
+                x: paddedXAxis,
                 y: core,
                 style: {
                     line: getColors(this._data.length % i)
@@ -91,7 +89,6 @@ module.exports = new GenericTask({
     async returnDebugState(stage) {
         const source = (await readFile(this.filePath)).toString();
         return {
-            headings: this.headings,
             range: this.range,
             source
         }

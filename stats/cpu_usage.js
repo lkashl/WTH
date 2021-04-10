@@ -3,6 +3,7 @@ const { readFile } = require('../util/file');
 const contrib = require('blessed-contrib');
 const { getColors } = require('../util/colors');
 const { intervals } = require('../config');
+const { paddedXAxis } = require('../util/render');
 
 /*
 DATA STRUCTURE: 
@@ -81,8 +82,6 @@ module.exports = new GenericTask({
             }
         })
 
-        if (firstInit) this.axis = Object.keys(this.headings).map(num => Number.parseInt(num));
-
     },
     async prepareRender(grid, [y, x, yw, xw]) {
 
@@ -107,7 +106,7 @@ module.exports = new GenericTask({
         const series = this._data.map((core, i) => {
             return {
                 title: `Core ${i}`,
-                x: this.axis,
+                x: paddedXAxis,
                 y: core,
                 style: {
                     line: getColors(this.headings.length % i)

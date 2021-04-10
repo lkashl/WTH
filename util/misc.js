@@ -31,6 +31,20 @@ const executeTo = async (alias, funct, target = 1) => {
     executeToStore[alias]++;
 }
 
+// Assumes a time store as a two dimensional array
+// Hardware ID is the first locator
+// Each time interval is expressed as an entry within hardware ID
+// This should be the standard access pattern to support switching between time series and in moment data
+
+const storeAsTimeSeries = (data, hardwareIndex, entries, intervals) => {
+    if (!data[hardwareIndex]) data[hardwareIndex] = [];
+    let current = data[hardwareIndex];
+    // If we already have sufficient data, splice to the new entries
+    if (current.length === intervals) current.splice(0, 1);
+    current.push(entries);
+    return data;
+}
+
 module.exports = {
-    forNumber, bytesToReadable, executeTo
+    forNumber, bytesToReadable, executeTo, storeAsTimeSeries
 }

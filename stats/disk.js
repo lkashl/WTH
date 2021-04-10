@@ -2,7 +2,9 @@ const GenericTask = require('../classes/GenericTask');
 const { readFile, readdir, fstat } = require('../util/file');
 const contrib = require('blessed-contrib');
 const { bytesToReadable, forNumber } = require('../util/misc');
+const { columnSpacing } = require('../util/render');
 
+const tableWidth = 6
 /*
 DATA STRUCTURE: 
 [
@@ -110,7 +112,7 @@ module.exports = new GenericTask({
                     writeB -= this.baseLine[index].writeB;
 
                     this._data[index] = {
-                        percentQueue: activeIoms + queueIoms === 0 ? 0 : queueIoms / (activeIoms + queueIoms) * 100,
+                        percentQueue: activeIoms + queueIoms === 0 ? 0 : Math.round(queueIoms / (activeIoms + queueIoms) * 10000)/100 + "%",
                         readB: readB,
                         writeB: writeB
                     }
@@ -122,26 +124,26 @@ module.exports = new GenericTask({
     },
     async prepareRender(grid, [y, x, yw, xw]) {
         const renders = [];
-        for (let i = 0; i < this.devices.length; i++) {
-            renders.push(grid.set(y + i * 2, x, 2, xw, contrib.table, {
-                label: this.devices[i],
-                columnWidth: [9, 9, 9],
-                keys: true,
-                fg: "green",
-                selectedFg: "foreground",
-                selectedBg: "background"
-            }))
-        }
+        renders.push(grid.set(y, x, yw, xw, contrib.table, {
+            label: "Disk Activity",
+            columnWidth: [tableWidth, tableWidth, tableWidth, tableWidth],
+            columnSpacing: columnSpacing,
+            keys: true,
+            fg: "green",
+            selectedFg: "foreground",
+            selectedBg: "background",
+            bold: false
+        }))
+
         this._renders = renders;
     },
     async render() {
         if (this._data.length > 0) {
-            this._renders.forEach((render, i) => render.setData({
-                headers: ["% Wait", "Read", "Write"],
-                data: [
-                    [this._data[i].percentQueue, bytesToReadable(this._data[i].readB), bytesToReadable(this._data[i].writeB)]
-                ]
-            }));
+            const data = this._data.map((data, i) => [this.devices[i], data.percentQueue, bytesToReadable(data.readB), bytesToReadable(data.writeB)])
+            this._renders[0].setData({
+                headers: ["Disk", "Wait", "Read", "Write"],
+                data
+            });
         }
 
     },

@@ -3,7 +3,9 @@ const { readFile } = require('../util/file');
 const contrib = require('blessed-contrib');
 const { bytesToReadable, forNumber } = require('../util/misc');
 const { isDebug } = require('../util/env');
+const { columnSpacing } = require('../util/render');
 
+const tableWidth = 6;
 /*
 DATA STRUCTURE: 
 [
@@ -79,26 +81,25 @@ module.exports = new GenericTask({
     },
     async prepareRender(grid, [y, x, yw, xw]) {
         const renders = [];
-        for (let i = 0; i < this.adapters.length; i++) {
-            renders.push(grid.set(y + i * 2, x, 2, xw, contrib.table, {
-                label: this.adapters[i],
-                columnWidth: [9, 9, 9],
-                keys: true,
-                fg: "green",
-                selectedFg: "foreground",
-                selectedBg: "background"
-            }))
-        }
+        renders.push(grid.set(y, x, yw, xw, contrib.table, {
+            label: "Network Activity",
+            columnWidth: [10, 8, 8],
+            columnSpacing: columnSpacing,
+            keys: true,
+            fg: "green",
+            selectedFg: "foreground",
+            selectedBg: "background"
+        }))
         this._renders = renders;
     },
     async render() {
         if (this._data.length > 0) {
-            this._renders.forEach((render, i) => render.setData({
-                headers: ["Incoming", "Outgoing"],
-                data: [
-                    [bytesToReadable(this._data[i].incomingNet), bytesToReadable(this._data[i].outgoingNet)]
-                ]
-            }));
+            const data = this._data.map((drive, i) => [this.adapters[i], bytesToReadable(drive.incomingNet), bytesToReadable(drive.outgoingNet)])
+            
+            this._renders[0].setData({
+                headers: ["Device", "In.", "Out."],
+                data
+            });
         }
     },
     async returnDebugState(stage) {

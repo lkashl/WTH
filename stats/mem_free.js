@@ -2,6 +2,7 @@ const GenericTask = require('../classes/GenericTask');
 const { readFile } = require('../util/file');
 const contrib = require('blessed-contrib');
 const { forNumber, bytesToReadable } = require('../util/misc');
+const { tableWidth, columnSpacing } = require('../util/render');
 
 /*
 DATA STRUCTURE: 
@@ -48,11 +49,12 @@ module.exports = new GenericTask({
     async prepareRender(grid, [y, x, yw, xw]) {
         this._renders = [grid.set(y, x, yw, xw, contrib.table, {
             label: "Memory",
-            columnWidth: [9, 9, 9],
+            columnWidth: [tableWidth, tableWidth, tableWidth],
             keys: true,
             fg: "green",
             selectedFg: "foreground",
-            selectedBg: "background"
+            selectedBg: "background",
+            columnSpacing
         })]
     },
     async render() {
