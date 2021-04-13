@@ -130,10 +130,8 @@ createRender("disk", settings, [[(grid) => {
         columnWidth: [7, 6, 6, 6],
         columnSpacing: columnSpacing,
         keys: true,
-        fg: "green",
-        selectedFg: "foreground",
-        selectedBg: "background",
-        bold: false
+        fg: "foreground",
+        interactive: false
     })
 }, ({ data, devices }) => {
     if (data.length === 0) return null;
@@ -150,10 +148,8 @@ createRender("gpu_nvidia", settings, [[(grid, { data }) => {
         columnWidth: [16, 8],
         columnSpacing: 3,
         keys: true,
-        fg: "black",
-        selectedFg: "foreground",
-        selectedBg: "foreground",
-        bold: false
+        fg: "foreground",
+        interactive: false
     })
 }, ({ data }) => {
     if (data.length > 0) {
@@ -271,10 +267,9 @@ createRender("mem_free", settings, [[(grid) => {
         label: "Memory",
         columnWidth: [8, 8, 8],
         keys: true,
-        fg: "green",
-        selectedFg: "foreground",
-        selectedBg: "background",
-        columnSpacing
+        fg: "foreground",
+        columnSpacing,
+        interactive: false
     })
 }, ({ data }) => {
     return {
@@ -291,9 +286,8 @@ createRender("network", settings, [[(grid) => {
         columnWidth: [10, 8, 8],
         columnSpacing: columnSpacing,
         keys: true,
-        fg: "green",
-        selectedFg: "foreground",
-        selectedBg: "background"
+        fg: "foreground",
+        interactive: false
     })
 }, ({ data, adapters }) => {
     if (data.length === 0) return null;
