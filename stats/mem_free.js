@@ -1,8 +1,6 @@
 const GenericTask = require('../classes/GenericTask');
 const { readFile } = require('../util/file');
-const contrib = require('blessed-contrib');
-const { forNumber, bytesToReadable } = require('../util/misc');
-const { tableWidth, columnSpacing } = require('../util/render');
+const { forNumber } = require('../util/misc');
 
 /*
 DATA STRUCTURE: 

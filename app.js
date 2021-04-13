@@ -29,7 +29,7 @@ logErr.log = async (message, err, state) => {
     if (!err && !state) return;
     const stack = err.stack.split("\n");
     forNumber(2, (i) => logErrActual.log(stack[i]), 0);
-    state = await state;
+    state = await state.catch(err => err);
     appendFile(`./logs/${state._name}.txt`, JSON.stringify(state) + "\n");
 }
 
@@ -59,10 +59,12 @@ const main = async () => {
                 await mod.phase("collect");
 
                 // For every layout render function defined
-                layout.renderFunctions[mod._name].forEach(([init, update], i) => {
+                layout._renderFunctions[mod._name].forEach(([init, update], i) => {
+                    const expose = mod.expose();
+
                     // Only on initialisation or forced refresh
                     if (!flags.pollInitialised) {
-                        const { oldRender, newRender } = init(grid);
+                        const { oldRender, newRender } = init(grid, expose);
                         // Remove the old render in case this is a force refresh
                         if (oldRender) screen.remove(oldRender);
                         // Open the new render
@@ -70,10 +72,9 @@ const main = async () => {
                     }
 
                     // Otherwise just set data normally
-                    const expose = mod.expose();
                     const updateData = update(expose);
                     if (!updateData) return;
-                    layout.currentRenders[mod._name][i].setData(updateData);
+                    layout._currentRenders[mod._name][i].setData(updateData);
 
                 });
             } catch (err) {

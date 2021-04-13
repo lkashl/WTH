@@ -1,10 +1,11 @@
+/*
+    Defines layout presentation as well as how exposed data from modules is represented 
+*/
+
 const contrib = require('blessed-contrib');
 const { getColors } = require('../util/colors');
 const { bytesToReadable } = require('../util/misc');
-const { paddedXAxis, columnSpacing } = require('../util/render');
-/*
-    Defines layout for presentation in render, this is fed into the render function
-*/
+const { paddedXAxis, columnSpacing, createRender } = require('../util/render');
 
 const internalStats = false;
 const enabledModules = ['cpu_usage', 'cpu_clock', 'mem_free', 'disk', 'network', 'gpu_nvidia'];
@@ -31,11 +32,16 @@ const networkHeight = (row2Start - row1Start - staticBlock) / 2;
 const diskStart = networkStart + networkHeight;
 
 const settings = {
+    // The layout storage is initialised within this object
+    // Reserved keywords:
+    //_renderFunctions: {},
+    //_currentRenders: {},
+
     // Whether internal tracking stats are enabled
     internalStats,
     // Specifies which modules are enabled for this dashboard
     enabledModules,
-    // Limits to the amount of rendered devices based on this dashboard
+    // Limits to the amount of rendered devices based on this dashboard, this is communicated to stats modules to optimise their efficiency
     limits: {
         disk: {
             maxDevices: 5
@@ -47,13 +53,14 @@ const settings = {
     // The master grid layout
     master: [rows, columns],
 
-    // Y, X, YW, XW
+    // Where enabled the location of internal stats
     "internalStats": {
         gen: [row0Start, col0Start, row1Start - row0Start, columns / 3],
         perf: [row0Start, columns / 3 * 1, row1Start - row0Start + 1, columns / 3],
         err: [row0Start, columns / 3 * 2, row1Start - row0Start, columns / 3]
     },
 
+    // Y, X, YW, XW locations of respective modules
     "mem_free": [row1Start, col1Start, staticBlock, col2Start - col1Start],
     "network": [networkStart, col1Start, Math.floor(networkHeight), col2Start - col1Start],
     "disk": [diskStart, col1Start, Math.ceil(networkHeight), col2Start - col1Start],
@@ -64,41 +71,11 @@ const settings = {
 
     "gpu_usage": [row1Start, col3Start, row2Start - row1Start, col4Start - col3Start],
     "gpu_clock": [row2Start, col3Start, row3Start - row2Start, col4Start - col3Start],
-
-    renderFunctions: {},
-    currentRenders: {}
 }
 
-// Helper function to clear old screens and refresh with new ones when init is called again
-const initWrapper = (targetModule, funct, i, grid) => {
-    const oldRender = settings.currentRenders[targetModule][i];
-    const newRender = funct(grid);
-    settings.currentRenders[targetModule][i] = newRender;
 
-    return {
-        oldRender: oldRender || null,
-        newRender
-    }
-}
-
-// Helper function to seed wrapper creation and update functions
-const createRender = (targetModule, functionArray) => {
-    if (!settings.renderFunctions[targetModule]) {
-        settings.renderFunctions[targetModule] = [];
-        settings.currentRenders[targetModule] = [];
-    }
-
-    functionArray.forEach(([init, update], i) => {
-        settings.renderFunctions[targetModule][i] = [(grid) => initWrapper(targetModule, init, i, grid), update];
-    })
-}
-
-let cpu_clock = { range: [null, null] };
-
-// Add force rerender functionality
-
-// Stores the functions for creating a new render as well as updating
-createRender("cpu_clock", [[(grid) => {
+// TODO: Add force rerender functionality
+createRender("cpu_clock", settings, [[(grid) => {
     return grid.set(...settings.cpu_clock, contrib.line, {
         style: {
             text: "green",
@@ -123,7 +100,7 @@ createRender("cpu_clock", [[(grid) => {
     })
 }]])
 
-createRender("cpu_usage", [[(grid) => {
+createRender("cpu_usage", settings, [[(grid) => {
     return grid.set(...settings.cpu_usage, contrib.line, {
         style: {
             text: "green",
@@ -147,7 +124,7 @@ createRender("cpu_usage", [[(grid) => {
 
 
 // Disk
-createRender("disk", [[(grid) => {
+createRender("disk", settings, [[(grid) => {
     return grid.set(...settings.disk, contrib.table, {
         label: "Disk Activity",
         columnWidth: [7, 6, 6, 6],
@@ -167,9 +144,9 @@ createRender("disk", [[(grid) => {
     }
 }]])
 
-createRender("gpu_nvidia", [[(grid) => {
+createRender("gpu_nvidia", settings, [[(grid, { data }) => {
     return grid.set(...settings.gpu_nvidia, contrib.table, {
-        //label: `${this._data[0][0].name} [${this._data[0][0]['memory.total']}Mb] [${this._data[0][0]['power.limit']}W]`,
+        label: `${data[0][0].name} [${data[0][0]['memory.total']}Mb] [${data[0][0]['power.limit']}W]`,
         columnWidth: [16, 8],
         columnSpacing: 3,
         keys: true,
@@ -222,7 +199,7 @@ createRender("gpu_nvidia", [[(grid) => {
     const gpu = data[0];
     const mem = [], core = [];
 
-    // TODO: Reoptimise GPU data format to not require additional serialisation
+    // TODO: Reoptimise GPU data format to not require additional processing
     gpu.map(interval => {
         core.push(interval["utilization.gpu"])
         mem.push(interval["utilization.memory"])
@@ -267,11 +244,6 @@ createRender("gpu_nvidia", [[(grid) => {
     })
 
     return [{
-        title: `core`,
-        x: paddedXAxis,
-        y: graphics,
-        style: { line: "blue" }
-    }, {
         title: "mem",
         x: paddedXAxis,
         y: memory,
@@ -286,13 +258,18 @@ createRender("gpu_nvidia", [[(grid) => {
         x: paddedXAxis,
         y: video,
         style: { line: "red" }
-    },]
+    }, {
+        title: `core`,
+        x: paddedXAxis,
+        y: graphics,
+        style: { line: "blue" }
+    }]
 }]])
 
-createRender("mem_free", [[(grid) => {
+createRender("mem_free", settings, [[(grid) => {
     return grid.set(...settings.mem_free, contrib.table, {
         label: "Memory",
-        columnWidth: [6, 6, 6],
+        columnWidth: [8, 8, 8],
         keys: true,
         fg: "green",
         selectedFg: "foreground",
@@ -308,7 +285,7 @@ createRender("mem_free", [[(grid) => {
     }
 }]])
 
-createRender("network", [[(grid) => {
+createRender("network", settings, [[(grid) => {
     return grid.set(...settings.network, contrib.table, {
         label: "Network Activity",
         columnWidth: [10, 8, 8],
