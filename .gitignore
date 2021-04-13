@@ -3,3 +3,4 @@ node_modules
 *.0x
 logs/*.txt
 logs/*.replica
+nvidia-smi

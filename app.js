@@ -7,10 +7,11 @@ const contrib = require('blessed-contrib');
 const layout = require('./layouts/default');
 const { forNumber } = require('./util/misc');
 const { appendFile } = require('./util/file');
+const { init } = require('./stats/gpu_nvidia');
 
 const failLimit = 2;
 
-let screen, grid, logGen, logPerf, logErr;
+let screen, grid, logGen, logPerf, logErr = {};
 screen = blessed.screen();
 
 grid = new contrib.grid({
@@ -21,21 +22,20 @@ if (layout.internalStats) {
     logGen = grid.set(...layout.internalStats.gen, contrib.log, { fg: "green", selectedFg: "green", label: "General Log" })
     logPerf = grid.set(...layout.internalStats.perf, contrib.log, { fg: "gray", selectedFg: "green", label: "Performance Log" })
     logErrActual = grid.set(...layout.internalStats.err, contrib.log, { fg: "red", selectedFg: "green", label: "Error Log" })
-
-    logErr = {};
-    logErr.log = async (message, err, state) => {
-        logErrActual.log(message);
-        if (!err && !state) return;
-        const stack = err.stack.split("\n");
-        forNumber(2, (i) => logErrActual.log(stack[i]), 0);
-        state = await state;
-        appendFile(`./logs/${state._name}.txt`, JSON.stringify(state) + "\n");
-    }
-
-    screen.key(['escape', 'q', 'C-c'], function (ch, key) {
-        return process.exit(0);
-    });
 }
+
+logErr.log = async (message, err, state) => {
+    if (layout.internalStats) logErrActual.log(message);
+    if (!err && !state) return;
+    const stack = err.stack.split("\n");
+    forNumber(2, (i) => logErrActual.log(stack[i]), 0);
+    state = await state;
+    appendFile(`./logs/${state._name}.txt`, JSON.stringify(state) + "\n");
+}
+
+screen.key(['escape', 'q', 'C-c'], function (ch, key) {
+    return process.exit(0);
+});
 
 
 const main = async () => {
@@ -58,21 +58,27 @@ const main = async () => {
             try {
                 await mod.phase("collect");
 
-                if (!flags.pollInitialised || mod._forceRerender) {
-                    mod._forceRerender = false;
-                    mod.phase("prepareRender", grid, layout[mod._name]);
-                    mod._renders.forEach(render => {
-                        screen.remove(render);
-                        screen.append(render);
-                    })
-                }
+                // For every layout render function defined
+                layout.renderFunctions[mod._name].forEach(([init, update], i) => {
+                    // Only on initialisation or forced refresh
+                    if (!flags.pollInitialised) {
+                        const { oldRender, newRender } = init(grid);
+                        // Remove the old render in case this is a force refresh
+                        if (oldRender) screen.remove(oldRender);
+                        // Open the new render
+                        screen.append(newRender);
+                    }
 
-                await mod.phase("render");
-                //if (logPerf) logPerf.log(`${mod._name} ${mod._performance.join(", ")}`)
+                    // Otherwise just set data normally
+                    const expose = mod.expose();
+                    const updateData = update(expose);
+                    if (!updateData) return;
+                    layout.currentRenders[mod._name][i].setData(updateData);
 
+                });
             } catch (err) {
                 // If any of the components from render to collect fail then flag this module as unstable
-                if (logErr) logErr.log("Failed poll", err, mod.returnDebugState(err))
+                logErr.log("Failed poll", err, mod.returnDebugState(err))
                 mod._failures++;
                 if (mod._failures === failLimit) trimFailing.push({ i, err, mod });
             }
@@ -98,7 +104,7 @@ const main = async () => {
         })
         .catch((err) => {
             // Write out error to log render
-            if (logErr) logErr.log("Failed init: " + mod._name, err, mod.returnDebugState(err))
+            logErr.log("Failed init: " + mod._name, err, mod.returnDebugState(err))
             disabledModules.push({ mod, err })
         })
         .then(() => {

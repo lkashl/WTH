@@ -3,7 +3,7 @@ const { exec } = require('child_process');
 const trigger = (cmd) => {
     return new Promise((resolve, reject) => {
         exec(cmd, function (err, stdout, stderr) {
-            reject(err);
+            if (err) reject(err);
             resolve(stdout);
         })
     })

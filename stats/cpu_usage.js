@@ -1,9 +1,6 @@
 const GenericTask = require('../classes/GenericTask');
 const { readFile } = require('../util/file');
-const contrib = require('blessed-contrib');
-const { getColors } = require('../util/colors');
 const { intervals } = require('../config');
-const { paddedXAxis } = require('../util/render');
 
 /*
 DATA STRUCTURE: 
@@ -30,10 +27,7 @@ module.exports = new GenericTask({
         if (!this._data) {
             this._data = [];
             this.headings = [];
-            this.range = [null, null];
             this.baseLine = [];
-            this.axis = [];
-            this.range = [0, 1]
             firstInit = true;
         }
 
@@ -42,8 +36,7 @@ module.exports = new GenericTask({
         // If the file hasn't been updated then just return the same info
         if (contents.length === 1) {
             this._data.forEach(core => {
-                //let rand = Math.random() * 100;
-                const entry = core[core.length - 1]// + rand;
+                const entry = core[core.length - 1]
                 core.push(entry);
             })
             return;
@@ -73,55 +66,23 @@ module.exports = new GenericTask({
                 const val = intervalConsumed / intervalIdle * 100;
                 if (this._data[core].length === intervals) this._data[core].splice(0, 1);
                 this._data[core].push(val);
-
-                if (val > this.range[1]) {
-                    this.range[1] = val;
-                    this._forceRerender = true;
-                }
                 core++;
             }
         })
 
     },
-    async prepareRender(grid, [y, x, yw, xw]) {
-
-        if (this.range[0] === this.range[1]) {
-            this.range[1]++
-            if (this.range >= 1) this.range[0]--
+    expose() {
+        return {
+            headings: this.headings,
+            baseLine: this.baseLine,
+            data: this._data
         }
-
-        this._renders = [grid.set(y, x, yw, xw, contrib.line, {
-            style: {
-                text: "green",
-                baseline: "black"
-            },
-            label: "CPU Usage",
-            minY: this.range[0],
-            maxY: this.range[1],
-            wholeNumbersOnly: true
-        })]
-
-    },
-    async render() {
-        const series = this._data.map((core, i) => {
-            return {
-                title: `Core ${i}`,
-                x: paddedXAxis,
-                y: core,
-                style: {
-                    line: getColors(this.headings.length % i)
-                }
-            }
-        })
-        this._renders[0].setData(series)
     },
     async returnDebugState(stage) {
         const source = (await readFile(this.filePath)).toString();
         return {
             headings: this.headings,
-            range: this.range,
             baseLine: this.baseLine,
-            axis: this.axis,
             source
         }
     }

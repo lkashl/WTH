@@ -46,29 +46,16 @@ module.exports = new GenericTask({
         }
 
     },
-    async prepareRender(grid, [y, x, yw, xw]) {
-        this._renders = [grid.set(y, x, yw, xw, contrib.table, {
-            label: "Memory",
-            columnWidth: [tableWidth, tableWidth, tableWidth],
-            keys: true,
-            fg: "green",
-            selectedFg: "foreground",
-            selectedBg: "background",
-            columnSpacing
-        })]
-    },
-    async render() {
-        this._renders[0].setData({
-            headers: ["% Used", "Free", "Total"],
-            data: [
-                [this._data.percent, bytesToReadable(this._data.free), bytesToReadable(this._data.total)]
-            ]
-        })
-    },
     async returnDebugState(stage) {
         const source = (await readFile(this.filePath)).toString();
         return {
             source
         }
+    },
+    expose() {
+        return {
+            data: this._data
+        }
     }
+
 })

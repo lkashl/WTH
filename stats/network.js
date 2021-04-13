@@ -79,35 +79,18 @@ module.exports = new GenericTask({
             this.baseLine[name] = { incoming, outgoing };
         })
     },
-    async prepareRender(grid, [y, x, yw, xw]) {
-        const renders = [];
-        renders.push(grid.set(y, x, yw, xw, contrib.table, {
-            label: "Network Activity",
-            columnWidth: [10, 8, 8],
-            columnSpacing: columnSpacing,
-            keys: true,
-            fg: "green",
-            selectedFg: "foreground",
-            selectedBg: "background"
-        }))
-        this._renders = renders;
-    },
-    async render() {
-        if (this._data.length > 0) {
-            const data = this._data.map((drive, i) => [this.adapters[i], bytesToReadable(drive.incomingNet), bytesToReadable(drive.outgoingNet)])
-            
-            this._renders[0].setData({
-                headers: ["Device", "In.", "Out."],
-                data
-            });
-        }
-    },
     async returnDebugState(stage) {
         const source = (await readFile(this.filePath)).toString();
         return {
             adapters: this.adapters,
             baseLine: this.baseLine,
             source: source
+        }
+    },
+    expose() {
+        return {
+            data: this._data,
+            adapters: this.adapters
         }
     }
 })

@@ -5,6 +5,9 @@ const { getColors } = require('../util/colors');
 const { trigger } = require('../util/process');
 const { storeAsTimeSeries } = require('../util/misc');
 const { columnSpacing } = require('../util/render');
+const { isDebug } = require('../util/env');
+const { intervals } = require('../config');
+
 
 /*
 DATA STRUCTURE: 
@@ -13,8 +16,6 @@ DATA STRUCTURE:
     corex+1[...statsxTime]
 ]
 */
-
-const intervals = 1;
 
 const throttleReasons = ["clocks_throttle_reasons.gpu_idle", "clocks_throttle_reasons.sw_power_cap", "clocks_throttle_reasons.hw_slowdown", "clocks_throttle_reasons.hw_thermal_slowdown", "clocks_throttle_reasons.hw_power_brake_slowdown", "clocks_throttle_reasons.sw_thermal_slowdown", "clocks_throttle_reasons.sync_boost"];
 
@@ -29,7 +30,10 @@ module.exports = new GenericTask({
     },
     async collect() {
         // Collect data
-        let rawData = await (await readFile('./logs/gpu_nvidia.replica')).toString();
+        let rawData;
+        if (isDebug) rawData = await (await readFile('./logs/gpu_nvidia.replica')).toString()
+        else rawData = await trigger(this.execPath)
+
         rawData = rawData.split('\n');
 
         rawData.forEach((gpu, gpuI) => {
@@ -59,59 +63,18 @@ module.exports = new GenericTask({
             storeAsTimeSeries(this._data, gpuI, data, intervals);
         })
     },
-    async prepareRender(grid, [y, x, yw, xw]) {
-        const renders = [];
-        renders.push(grid.set(y, x, yw, xw, contrib.table, {
-            label: `${this._data[0][0].name} [${this._data[0][0]['memory.total']}Mb] [${this._data[0][0]['power.limit']}W]`,
-            columnWidth: [16, 8],
-            columnSpacing: 3,
-            keys: true,
-            fg: "black",
-            selectedFg: "foreground",
-            selectedBg: "foreground",
-            bold: false
-        }))
-        this._renders = renders;
-    },
-    async render() {
-        if (this._data.length > 0) {
-            const gpu = this._data[0];
-            const data = gpu[gpu.length - 1];
-
-            const spacer = [' ', ' '];
-            const vals = [
-                [`Throttle [${data.pstate}]`, data.throttle],
-                ['Util (Core)', data['utilization.gpu'] + "%"],
-                ['Util (Mem)', data['utilization.memory'] + "%"],
-                ['Power Draw', data['power.draw']],
-                spacer,
-                ['Temp Core/Mem', data['temperature.gpu'] + "/" + data['temperature.memory']],
-                ["Fan Speed", data['fan.speed'] + "%"],
-                spacer,
-                ['Clock', data['clocks.current.graphics']],
-                ['Clock (mem)', data['clocks.current.memory']],
-                ['Clock (vid)', data['clocks.current.video']],
-                ['Clock (sm)', data['clocks.current.sm']],
-                spacer,
-                ['VRAM Used/Free', data['memory.used'] + "/" + data['memory.free']],
-                spacer,
-                ['PCI Gen/Width',"G"+ data['pcie.link.gen.current'] + "/" + data['pcie.link.width.current']+ "x"]
-
-            ]
-
-            this._renders[0].setData({
-                headers: spacer,
-                data: vals
-            });
-        }
-    },
     async returnDebugState(stage) {
-        return {};
-        const source = (await readFile(this.filePath)).toString();
+        if (isDebug) rawData = await (await readFile('./logs/gpu_nvidia.replica')).toString()
+        else rawData = await trigger(this.execPath)
+        
         return {
-            headings: this.headings,
-            range: this.range,
-            source
+            data: this._data,
+            source: rawData
         }
+    },
+    expose() {
+        return {
+            data: this._data
+        };
     }
 })

@@ -112,7 +112,7 @@ module.exports = new GenericTask({
                     writeB -= this.baseLine[index].writeB;
 
                     this._data[index] = {
-                        percentQueue: activeIoms + queueIoms === 0 ? 0 : Math.round(queueIoms / (activeIoms + queueIoms) * 10000)/100 + "%",
+                        percentQueue: activeIoms + queueIoms === 0 ? 0 : Math.round(queueIoms / (activeIoms + queueIoms) * 10000) / 100 + "%",
                         readB: readB,
                         writeB: writeB
                     }
@@ -122,30 +122,13 @@ module.exports = new GenericTask({
             }
         });
     },
-    async prepareRender(grid, [y, x, yw, xw]) {
-        const renders = [];
-        renders.push(grid.set(y, x, yw, xw, contrib.table, {
-            label: "Disk Activity",
-            columnWidth: [tableWidth, tableWidth, tableWidth, tableWidth],
-            columnSpacing: columnSpacing,
-            keys: true,
-            fg: "green",
-            selectedFg: "foreground",
-            selectedBg: "background",
-            bold: false
-        }))
-
-        this._renders = renders;
-    },
-    async render() {
-        if (this._data.length > 0) {
-            const data = this._data.map((data, i) => [this.devices[i], data.percentQueue, bytesToReadable(data.readB), bytesToReadable(data.writeB)])
-            this._renders[0].setData({
-                headers: ["Disk", "Wait", "Read", "Write"],
-                data
-            });
+    expose() {
+        return {
+            baseLine: this.baseLine,
+            data: this._data,
+            devices: this.devices,
+            sectors: this.sectors
         }
-
     },
     async returnDebugState(stage) {
         return {
