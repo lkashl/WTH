@@ -1,7 +1,7 @@
 const contrib = require('blessed-contrib');
 const { getColors } = require('../util/colors');
 const { bytesToReadable } = require('../util/misc');
-const { paddedXAxis, tableWidth, columnSpacing } = require('../util/render');
+const { paddedXAxis, columnSpacing } = require('../util/render');
 /*
     Defines layout for presentation in render, this is fed into the render function
 */
@@ -150,7 +150,7 @@ createRender("cpu_usage", [[(grid) => {
 createRender("disk", [[(grid) => {
     return grid.set(...settings.disk, contrib.table, {
         label: "Disk Activity",
-        columnWidth: [tableWidth, tableWidth, tableWidth, tableWidth],
+        columnWidth: [7, 6, 6, 6],
         columnSpacing: columnSpacing,
         keys: true,
         fg: "green",
@@ -292,7 +292,7 @@ createRender("gpu_nvidia", [[(grid) => {
 createRender("mem_free", [[(grid) => {
     return grid.set(...settings.mem_free, contrib.table, {
         label: "Memory",
-        columnWidth: [tableWidth, tableWidth, tableWidth],
+        columnWidth: [6, 6, 6],
         keys: true,
         fg: "green",
         selectedFg: "foreground",
